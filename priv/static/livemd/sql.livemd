@@ -1,0 +1,596 @@
+# sql murder mystery
+
+```elixir
+Mix.install([
+  {:kino_explorer, "~> 0.1.11"},
+  {:ecto, "~> 3.10"},
+  {:ecto_sql, "~> 3.10"},
+  {:postgrex, "~> 0.17.3"},
+  {:kino, "~> 0.11.0"},
+  {:kino_db, "~> 0.2.4"},
+  {:nimble_csv, "~> 1.2"}
+])
+```
+
+```
+:ok
+```
+
+## whodunnit in ecto (elixir)
+
+* https://mystery.knightlab.com/
+* https://github.com/NUKnightLab/sql-mysteries/blob/master/sql-murder-mystery.db
+
+## schema
+
+```elixir
+defmodule Migrations.AddTables do
+  use Ecto.Migration
+
+  def up do
+    create table("crime_scene_report") do
+      add(:date, :integer)
+      add(:type, :string)
+      add(:description, :string)
+      add(:city, :string)
+    end
+
+    create table("person") do
+      add(:name, :string)
+      add(:license_id, :integer)
+      add(:address_number, :integer)
+      add(:address_street_name, :string)
+      add(:ssn, :integer)
+    end
+
+    create table("interview") do
+      add(:person_id, :integer)
+      add(:transcript, :string)
+    end
+
+    create table("drivers_license") do
+      add(:age, :integer)
+      add(:height, :integer)
+      add(:eye_color, :string)
+      add(:hair_color, :string)
+      add(:gender, :string)
+      add(:plate_number, :string)
+      add(:car_make, :string)
+      add(:car_model, :string)
+    end
+
+    create table("facebook_event_checkin") do
+      add(:person_id, :integer)
+      add(:event_id, :integer)
+      add(:event_name, :string)
+      add(:date, :integer)
+    end
+
+    create table("get_fit_now_checkin") do
+      add(:membership_id, :string)
+      add(:check_in_date, :integer)
+      add(:check_in_time, :integer)
+      add(:check_out_time, :integer)
+    end
+
+    create table("get_fit_now_member") do
+      add(:member_id, :string)
+      add(:person_id, :integer)
+      add(:name, :string)
+      add(:membership_start_date, :integer)
+      add(:membership_status, :string)
+    end
+
+    create table("income") do
+      add(:ssn, :integer)
+      add(:annual_income, :integer)
+    end
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Migrations.AddTables, <<70, 79, 82, 49, 0, 0, 24, ...>>, {:up, 0}}
+```
+
+```elixir
+defmodule CrimeSceneReport do
+  use Ecto.Schema
+
+  schema "crime_scene_report" do
+    field(:date, :integer)
+    field(:type, :string)
+    field(:description, :string)
+    field(:city, :string)
+  end
+end
+
+defmodule Person do
+  use Ecto.Schema
+
+  schema "person" do
+    field(:name, :string)
+    field(:license_id, :integer)
+    field(:address_number, :integer)
+    field(:address_street_name, :string)
+    field(:ssn, :integer)
+  end
+end
+
+defmodule Interview do
+  use Ecto.Schema
+
+  schema "interview" do
+    field(:person_id, :integer)
+    field(:transcript, :string)
+  end
+end
+
+defmodule GetFitNowMember do
+  use Ecto.Schema
+
+  schema "get_fit_now_member" do
+    field(:member_id, :string)
+    field(:person_id, :integer)
+    field(:name, :string)
+    field(:membership_start_date, :integer)
+    field(:membership_status, :string)
+  end
+end
+
+defmodule GetFitNowCheckin do
+  use Ecto.Schema
+
+  schema "get_fit_now_checkin" do
+    field(:membership_id, :string)
+    field(:check_in_date, :integer)
+    field(:check_in_time, :integer)
+    field(:check_out_time, :integer)
+  end
+end
+
+defmodule DriversLicense do
+  use Ecto.Schema
+
+  schema "drivers_license" do
+    field(:age, :integer)
+    field(:height, :integer)
+    field(:eye_color, :string)
+    field(:hair_color, :string)
+    field(:gender, :string)
+    field(:plate_number, :string)
+    field(:car_make, :string)
+    field(:car_model, :string)
+  end
+end
+
+defmodule FBCheckin do
+  use Ecto.Schema
+
+  schema "facebook_event_checkin" do
+    field(:person_id, :integer)
+    field(:event_id, :integer)
+    field(:event_name, :string)
+    field(:date, :integer)
+  end
+end
+
+defmodule Income do
+  use Ecto.Schema
+
+  schema "income" do
+    field(:ssn, :integer)
+    field(:annual_income, :integer)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Income, <<70, 79, 82, 49, 0, 0, 16, ...>>,
+  [__schema__: 1, __schema__: 1, __schema__: 1, __schema__: 1, __schema__: 2, __schema__: 2, ...]}
+```
+
+```elixir
+defmodule Repo do
+  use Ecto.Repo, otp_app: :my_app, adapter: Ecto.Adapters.Postgres
+end
+
+Repo.__adapter__().storage_up(
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "pgectosql"
+)
+
+Kino.terminate_child(IEx.Helpers.pid("0.xxxx.0"))
+Kino.start_child({Repo, url: "postgres://postgres:postgres@localhost/pgectosql"})
+Ecto.Migrator.up(Repo, Enum.random(123..456), Migrations.AddTables)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, #PID<0.3111.0>}
+```
+
+```elixir
+defmodule File2DB do
+  @moduledoc """
+    A module template for the csv-to-postgres pipeline
+    Below example is for the income schema
+  """
+
+  def income(stream) do
+    Stream.map(stream, fn [ssn, annual_income] ->
+      Repo.insert_all(
+        Income,
+        [%{ssn: String.to_integer(ssn), annual_income: String.to_integer(annual_income)}]
+      )
+    end)
+  end
+
+  def insert(path, func) do
+    NimbleCSV.define(MyParser, separator: ",", escape: "\"")
+
+    path
+    |> File.stream!()
+    |> MyParser.parse_stream()
+    |> func.()
+    |> Stream.chunk_every(1000)
+    |> Stream.run()
+  end
+end
+
+# File2DB.insert("/path/to/data/income.csv", &File2DB.income/1)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+warning: MyParser.parse_stream/1 is undefined (module MyParser is not available or is yet to be defined)
+  #cell:gfuc2kt3cp7p3kxszha4jugi5gcugkbf:21: File2DB.insert/2
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, File2DB, <<70, 79, 82, 49, 0, 0, 9, ...>>, {:insert, 2}}
+```
+
+```elixir
+import Ecto.Query
+show = fn query -> Repo.all(query) |> Kino.DataTable.new() end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Function<42.105768164/1 in :erl_eval.expr/6>
+```
+
+## sql
+
+```elixir
+q =
+  from(c in CrimeSceneReport,
+    where: c.date == 20_180_115,
+    where: c.city == "SQL City",
+    where: c.type == "murder"
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:27:30.418 [debug] QUERY OK source="crime_scene_report" db=1.8ms queue=1.6ms idle=1521.5ms
+SELECT c0."id", c0."date", c0."type", c0."description", c0."city" FROM "crime_scene_report" AS c0 WHERE (c0."date" = 20180115) AND (c0."city" = 'SQL City') AND (c0."type" = 'murder') []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 975, type: "murder", date: 20180115, description: "Security footage shows that there were 2 witnesses. The first witness lives at the last house on \"Northwestern Dr\". The second witness, named Annabel, lives somewhere on \"Franklin Ave\".", city: "SQL City"}]
+```
+
+```elixir
+q =
+  from(p in Person,
+    where: like(p.address_street_name, "%Northwestern%"),
+    order_by: [desc: p.address_number],
+    limit: 5
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:27:42.359 [debug] QUERY OK source="person" db=3.1ms queue=2.1ms idle=1458.6ms
+SELECT p0."id", p0."name", p0."license_id", p0."address_number", p0."address_street_name", p0."ssn" FROM "person" AS p0 WHERE (p0."address_street_name" LIKE '%Northwestern%') ORDER BY p0."address_number" DESC LIMIT 5 []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 14887, name: "Morty Schapiro", license_id: 118009, address_number: 4919, address_street_name: "Northwestern Dr", ssn: 111564949}, %{id: 17729, name: "Lasonya Wildey", license_id: 439686, address_number: 3824, address_street_name: "Northwestern Dr", ssn: 917817122}, %{id: 53890, name: "Sophie Tiberio", license_id: 957671, address_number: 3755, address_street_name: "Northwestern Dr", ssn: 442830147}, %{id: 73368, name: "Torie Thalmann", license_id: 773862, address_number: 3697, address_street_name: "Northwestern Dr", ssn: 341559436}, %{id: 96595, name: "Coretta Cubie", license_id: 303645, address_number: 3631, address_street_name: "Northwestern Dr", ssn: 378403829}]
+```
+
+```elixir
+q =
+  from(p in Person,
+    where: like(p.name, "Anna%"),
+    where: like(p.address_street_name, "%Franklin%")
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:27:46.131 [debug] QUERY OK source="person" db=3.7ms queue=1.2ms idle=1230.6ms
+SELECT p0."id", p0."name", p0."license_id", p0."address_number", p0."address_street_name", p0."ssn" FROM "person" AS p0 WHERE (p0."name" LIKE 'Anna%') AND (p0."address_street_name" LIKE '%Franklin%') []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 16371, name: "Annabel Miller", license_id: 490173, address_number: 103, address_street_name: "Franklin Ave", ssn: 318771143}]
+```
+
+```elixir
+q =
+  from(i in Interview,
+    where: i.person_id == 16731
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:27:49.641 [debug] QUERY OK source="interview" db=1.4ms queue=0.8ms idle=1743.7ms
+SELECT i0."id", i0."person_id", i0."transcript" FROM "interview" AS i0 WHERE (i0."person_id" = 16731) []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[]
+```
+
+```elixir
+q =
+  from(i in Interview,
+    where: i.person_id == 14887
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:27:52.804 [debug] QUERY OK source="interview" db=1.5ms queue=1.0ms idle=1907.2ms
+SELECT i0."id", i0."person_id", i0."transcript" FROM "interview" AS i0 WHERE (i0."person_id" = 14887) []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 4989, person_id: 14887, transcript: "I heard a gunshot and then saw a man run out. He had a \"Get Fit Now Gym\" bag. The membership number on the bag started with \"48Z\". Only gold members have those bags. The man got into a car with a plate that included \"H42W\"."}]
+```
+
+```elixir
+q =
+  from(gfm in GetFitNowMember,
+    where: like(gfm.member_id, "48Z%"),
+    where: gfm.membership_status == "gold"
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:27:55.571 [debug] QUERY OK source="get_fit_now_member" db=0.7ms queue=0.7ms idle=1675.1ms
+SELECT g0."id", g0."member_id", g0."person_id", g0."name", g0."membership_start_date", g0."membership_status" FROM "get_fit_now_member" AS g0 WHERE (g0."member_id" LIKE '48Z%') AND (g0."membership_status" = 'gold') []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 182, name: "Joe Germuska", person_id: 28819, member_id: "48Z7A", membership_start_date: 20160305, membership_status: "gold"}, %{id: 183, name: "Jeremy Bowers", person_id: 67318, member_id: "48Z55", membership_start_date: 20160101, membership_status: "gold"}]
+```
+
+```elixir
+Repo.query("select * from get_fit_now_checkin
+where check_in_date = 20180109
+and (check_in_time between 1600 and 1700
+or check_out_time between 1600 and 1700)")
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:27:58.870 [debug] QUERY OK db=1.4ms queue=1.0ms idle=1972.8ms
+select * from get_fit_now_checkin
+where check_in_date = 20180109
+and (check_in_time between 1600 and 1700
+or check_out_time between 1600 and 1700) []
+
+02:27:58.873 [debug] QUERY OK source="get_fit_now_member" db=2.8ms idle=1975.5ms
+SELECT g0."id", g0."member_id", g0."person_id", g0."name", g0."membership_start_date", g0."membership_status" FROM "get_fit_now_member" AS g0 WHERE (g0."member_id" LIKE '48Z%') AND (g0."membership_status" = 'gold') []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 182, name: "Joe Germuska", person_id: 28819, member_id: "48Z7A", membership_start_date: 20160305, membership_status: "gold"}, %{id: 183, name: "Jeremy Bowers", person_id: 67318, member_id: "48Z55", membership_start_date: 20160101, membership_status: "gold"}]
+```
+
+```elixir
+q =
+  from(p in Person,
+    where: p.name in ["Joe Germuska", "Jeremy Bowers"]
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:28:03.171 [debug] QUERY OK source="person" db=2.3ms queue=0.4ms idle=1273.8ms
+SELECT p0."id", p0."name", p0."license_id", p0."address_number", p0."address_street_name", p0."ssn" FROM "person" AS p0 WHERE (p0."name" IN ('Joe Germuska','Jeremy Bowers')) []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 28819, name: "Joe Germuska", license_id: 173289, address_number: 111, address_street_name: "Fisk Rd", ssn: 138909730}, %{id: 67318, name: "Jeremy Bowers", license_id: 423327, address_number: 530, address_street_name: "Washington Pl, Apt 3A", ssn: 871539279}]
+```
+
+```elixir
+q =
+  from(dl in DriversLicense,
+    where: dl.id in [173_289, 423_327]
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:28:07.761 [debug] QUERY OK source="drivers_license" db=2.6ms queue=0.6ms idle=1862.6ms
+SELECT d0."id", d0."age", d0."height", d0."eye_color", d0."hair_color", d0."gender", d0."plate_number", d0."car_make", d0."car_model" FROM "drivers_license" AS d0 WHERE (d0."id" IN (173289,423327)) []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 423327, age: 30, height: 70, eye_color: "brown", hair_color: "brown", gender: "male", plate_number: "0H42W2", car_make: "Chevrolet", car_model: "Spark LS"}]
+```
+
+**Jeremy Bowers**
+
+<!-- livebook:{"break_markdown":true} -->
+
+> Congrats, you found the murderer! But wait, there's more... If you think you're up for a challenge, try querying the interview transcript of the murderer to find the real villain behind this crime. If you feel especially confident in your SQL skills, try to complete this final step with no more than 2 queries. Use this same INSERT statement with your new suspect to check your answer.
+
+```elixir
+q =
+  from(i in Interview,
+    where: i.person_id == 67318
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:28:16.053 [debug] QUERY OK source="interview" db=1.0ms queue=0.6ms idle=1156.8ms
+SELECT i0."id", i0."person_id", i0."transcript" FROM "interview" AS i0 WHERE (i0."person_id" = 67318) []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 4991, person_id: 67318, transcript: "I was hired by a woman with a lot of money. I don't know her name but I know she's around 5'5\" (65\") or 5'7\" (67\"). She has red hair and she drives a Tesla Model S. I know that she attended the SQL Symphony Concert 3 times in December 2017.\n"}]
+```
+
+> I was hired by a woman with a lot of money. I don't know her name but I know she's around 5'5" (65") or 5'7" (67"). She has red hair and she drives a Tesla Model S. I know that she attended the SQL Symphony Concert 3 times in December 2017.
+
+```elixir
+q =
+  from(fb in FBCheckin,
+    where: like(fb.event_name, "%SQL%"),
+    where: fb.date >= 20_171_201 and fb.date <= 20_171_231,
+    join: p in Person,
+    on: p.id == fb.person_id,
+    join: l in DriversLicense,
+    on: p.license_id == l.id,
+    join: i in Income,
+    on: p.ssn == i.ssn,
+    group_by: [
+      fb.person_id,
+      l.id,
+      l.hair_color,
+      l.car_make,
+      l.car_model,
+      l.gender,
+      l.height,
+      p.name
+    ],
+    select: %{
+      id: fb.person_id,
+      name: p.name,
+      income: max(i.annual_income),
+      gender: l.gender,
+      height: l.height,
+      car: l.car_make,
+      model: l.car_model,
+      concert: count(fb.date),
+      license_id: l.id
+    },
+    order_by: [desc: fb.count],
+    limit: 5
+  )
+
+show.(q)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+02:28:19.837 [debug] QUERY OK source="facebook_event_checkin" db=13.8ms queue=2.0ms idle=1925.9ms
+SELECT p1."name", max(i3."annual_income"), d2."gender", d2."height", d2."car_make", d2."car_model", count(f0."date"), f0."person_id", d2."id" FROM "facebook_event_checkin" AS f0 INNER JOIN "person" AS p1 ON p1."id" = f0."person_id" INNER JOIN "drivers_license" AS d2 ON p1."license_id" = d2."id" INNER JOIN "income" AS i3 ON p1."ssn" = i3."ssn" WHERE (f0."event_name" LIKE '%SQL%') AND ((f0."date" >= 20171201) AND (f0."date" <= 20171231)) GROUP BY f0."person_id", d2."id", d2."hair_color", d2."car_make", d2."car_model", d2."gender", d2."height", p1."name" ORDER BY f0."count" DESC LIMIT 5 []
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+[%{id: 99716, name: "Miranda Priestly", income: 310000, gender: "female", height: 66, car: "Tesla", model: "Model S", concert: 3, license_id: 202298}, %{id: 28582, name: "Denyse Bloomgren", income: 13800, gender: "female", height: 80, car: "GMC", model: "Sierra 2500", concert: 2, license_id: 332282}, %{id: 19292, name: "Enrique Feltes", income: 45000, gender: "male", height: 81, car: "BMW", model: "745", concert: 1, license_id: 681197}, %{id: 24397, name: "Cheri Kitty", income: 13200, gender: "female", height: 52, car: "Ford", model: "F450", concert: 1, license_id: 177140}, %{id: 19260, name: "Elmer Rosell", income: 29900, gender: "male", height: 51, car: "Mazda", model: "Protege", concert: 1, license_id: 746096}]
+```
+
+**Miranda Priestly**
+
+<!-- livebook:{"break_markdown":true} -->
+
+> Congrats, you found the brains behind the murder! Everyone in SQL City hails you as the greatest SQL detective of all time. Time to break out the champagne!  

@@ -1,0 +1,448 @@
+# think bayes (ch1)
+
+```elixir
+Mix.install([
+  {:explorer, "~> 0.8.0"},
+  {:kino_explorer, "~> 0.1.16"}
+])
+```
+
+## explorer
+
+```elixir
+require Explorer.DataFrame, as: DF
+require Explorer.Series, as: S
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Explorer.Series
+```
+
+```elixir
+df =
+  DF.from_csv!(
+    "/path/to/file/think-bayes/gss_bayes.csv"
+  )
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+#Explorer.DataFrame<
+Polars[49290 x 7]
+caseid s64 [1, 2, 5, 6, 7, ...]
+year s64 [1974, 1974, 1974, 1974, 1974, ...]
+age f64 [21.0, 41.0, 58.0, 30.0, 48.0, ...]
+sex s64 [1, 1, 2, 1, 1, ...]
+polviews f64 [4.0, 5.0, 6.0, 5.0, 5.0, ...]
+partyid f64 [2.0, 0.0, 1.0, 4.0, 4.0, ...]
+indus10 f64 [4970.0, 9160.0, 2670.0, 6870.0, 7860.0, ...]
+>
+```
+
+```elixir
+df = DF.mutate(df, is_banker: indus10 == 6870)
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+#Explorer.DataFrame<
+Polars[49290 x 8]
+caseid s64 [1, 2, 5, 6, 7, ...]
+year s64 [1974, 1974, 1974, 1974, 1974, ...]
+age f64 [21.0, 41.0, 58.0, 30.0, 48.0, ...]
+sex s64 [1, 1, 2, 1, 1, ...]
+polviews f64 [4.0, 5.0, 6.0, 5.0, 5.0, ...]
+partyid f64 [2.0, 0.0, 1.0, 4.0, 4.0, ...]
+indus10 f64 [4970.0, 9160.0, 2670.0, 6870.0, 7860.0, ...]
+is_banker boolean [false, false, false, true, false, ...]
+>
+```
+
+```elixir
+df
+|> DF.select("is_banker")
+|> DF.group_by("is_banker")
+|> DF.summarise(cnt_banker: count(is_banker))
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+#Explorer.DataFrame<
+Polars[2 x 2]
+is_banker boolean [false, true]
+cnt_banker u32 [48562, 728]
+>
+```
+
+## probability
+
+```elixir
+defmodule P do
+require Explorer.Series, as: S
+
+@doc """
+  P.of(df["is_a"])
+"""
+def of(%S{} = ser), do: S.sum(ser) / S.count(ser)
+
+@doc """
+  P.conjunct(df["is_a"], df["is_b"]) |> P.of
+"""
+def conjunct(%S{} = cond1, %S{} = cond2) do
+  a = S.cast(cond1, :integer)
+  b = S.cast(cond2, :integer)
+  S.multiply(a, b)
+end
+
+@doc """
+  P.condition(df["is_a"], df["is_b"]) |> P.of
+
+  P.conjunct(df["is_a"], df["is_b"])
+  |> P.condition(df["is_c"]) |> P.of
+"""
+def condition(%S{} = prop, %S{} = given) do
+  prop |> S.mask(given) |> S.cast(:integer)
+end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, P, <<70, 79, 82, 49, 0, 0, 9, ...>>, {:condition, 2}}
+```
+
+**notes**
+
+`P.of/1`
+
+- the book uses `A.mean()` via pandas
+- but i wouldn't like taking the "mean" in this context
+- "mean" is a measure of central tendency; can't operate over categorical vars directly
+- one does not usually take the "average of a True/False set". we just tally each.
+- but in the discrete case (ie tag 0,1), they're the same analytically or in code
+
+`P.of/1` is = prob() (is the probability function)
+
+- probability is a "fraction of a finite set"
+- `P.of/1` is the fraction of intended event over all events
+- numer = `S.sum(ser)` -> is adding all the rows with "1"s.
+- denom = `S.count(ser)` -> is counting all rows, both "0"s and "1"s.
+- meanwhile `A.mean()` -> `sum(list) / len(list)`
+- `sum(list)` -> since it's just "0"s and "1"s, then it's equal to `sum(ser)`
+- `len(list)` -> equal to `count(ser)`
+- `P.of/1` is elixir port of `A.mean()`
+
+```elixir
+# P(banker)
+P.of(df["is_banker"])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.014769730168391155
+```
+
+```elixir
+# P(liberal)
+df = DF.mutate(df, is_lib: polviews <= 3)
+
+P.of(df["is_lib"])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.27374721038750255
+```
+
+```elixir
+# P(democrat)
+df = DF.mutate(df, is_dem: partyid <= 1)
+
+P.of(df["is_dem"])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.3662609048488537
+```
+
+```elixir
+df = DF.mutate(df, is_female: sex == 2)
+
+P.of(df["is_female"])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.5378575776019476
+```
+
+## conjunction and conditional probability
+
+```elixir
+# P(dem & lib)
+P.conjunct(df["is_dem"], df["is_banker"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.004686548995739501
+```
+
+```elixir
+# P(dem | lib)
+P.condition(df["is_dem"], df["is_banker"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.3173076923076923
+```
+
+```elixir
+# for P(female | banker)
+P.condition(df["is_female"], df["is_banker"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.7706043956043956
+```
+
+```elixir
+# for P(banker | female); important: not commutative
+P.condition(df["is_banker"], df["is_female"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.02116102749801969
+```
+
+**notes**
+
+pandas syntax is unintuitive at first -> `democrat[liberal]`
+
+- i read this as: filter all democrats first, then index on liberals
+  - "among democrats, choose libs"
+- but what it does: filter liberals first, then select for democrats
+  - "among liberals, choose democrats"
+- it's more intuitive if it's `liberal[democrat]`
+
+but in python...
+
+- indexing is `list[n]`, the bigger set is usually the list, not n..
+- but also, that n "indexes" the whole list
+- so one passes a list index `list2[list1]`
+- `list1` is the first filter the same way as `P(list2|list1)` is defined
+- the pandas bracket operator is also doing a lot of magic though
+
+Explorer >>> Pandas
+
+
+```elixir
+# P(female | liberal & democrat)
+df = DF.mutate(df, is_lib_dem: partyid <= 1 and polviews <= 3)
+P.condition(df["is_female"], df["is_lib_dem"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.576085409252669
+```
+
+```elixir
+# P(lib & female | banker)
+P.conjunct(df["is_female"], df["is_lib"])
+|> P.condition(df["is_banker"])
+|> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.17307692307692307
+```
+
+## theorems
+
+### theorem 1
+
+P(A | B) = P(A & B) / P(B)
+
+```elixir
+p = P.condition(df["is_female"], df["is_banker"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.7706043956043956
+```
+
+```elixir
+a = P.conjunct(df["is_female"], df["is_banker"]) |> P.of()
+b = P.of(df["is_banker"])
+a / b
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.7706043956043956
+```
+
+### theorem 2
+
+P(A & B) = P(B) \* P(A | B)
+
+```elixir
+p = P.conjunct(df["is_lib"], df["is_dem"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.1425238385067965
+```
+
+```elixir
+ab = P.of(df["is_dem"]) * (P.condition(df["is_lib"], df["is_dem"]) |> P.of())
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.1425238385067965
+```
+
+### theorem 3
+
+P(A | B) = [P(A) * P(B | A)] / P(B)
+
+```elixir
+P.condition(df["is_lib"], df["is_banker"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.2239010989010989
+```
+
+```elixir
+a = P.of(df["is_lib"])
+b = P.condition(df["is_banker"], df["is_lib"]) |> P.of()
+c = P.of(df["is_banker"])
+a * b / c
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.2239010989010989
+```
+
+## exers
+
+```elixir
+df =
+  df
+  |> DF.mutate(is_young: age < 30)
+  |> DF.mutate(is_old: age >= 65)
+  |> DF.mutate(is_conservative: polviews >= 5)
+
+DF.head(df)
+```
+
+<!-- livebook:{"output":true} -->
+
+```text
+#Explorer.DataFrame<
+Polars[5 x 15]
+caseid s64 [1, 2, 5, 6, 7]
+year s64 [1974, 1974, 1974, 1974, 1974]
+age f64 [21.0, 41.0, 58.0, 30.0, 48.0]
+sex s64 [1, 1, 2, 1, 1]
+polviews f64 [4.0, 5.0, 6.0, 5.0, 5.0]
+partyid f64 [2.0, 0.0, 1.0, 4.0, 4.0]
+indus10 f64 [4970.0, 9160.0, 2670.0, 6870.0, 7860.0]
+is_banker boolean [false, false, false, true, false]
+is_lib boolean [false, false, false, false, false]
+is_dem boolean [false, true, true, false, false]
+is_female boolean [false, false, true, false, false]
+is_lib_dem boolean [false, false, false, false, false]
+is_young boolean [true, false, false, false, false]
+is_old boolean [false, false, false, false, false]
+is_conservative boolean [false, true, true, true, true]
+>
+```
+
+What is the probability that a randomly chosen respondent is a young liberal?
+
+```elixir
+# P(young and liberal)
+P.conjunct(df["is_young"], df["is_lib"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.06579427875836884
+```
+
+What is the probability that a young person is liberal?
+
+```elixir
+# P(liberal | young)
+P.condition(df["is_lib"], df["is_young"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.338517745302714
+```
+
+What fraction of respondents are old conservatives?
+
+```elixir
+# P(old and conservative)
+P.conjunct(df["is_old"], df["is_conservative"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.06701156421180766
+```
+
+What fraction of conservatives are old?
+
+```elixir
+# P(old | conservative)
+P.condition(df["is_old"], df["is_conservative"]) |> P.of()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+0.19597721609113564
+```
+
+<!-- livebook:{"offset":7901,"stamp":{"token":"XCP.L6F1R7GL9OKd8vvMUtD6KlVR5AefFcUvfVIM6Ahq1UpUiSrAkXqkJB1e3Vn0glGeCiyu6F9HtEkX-mx7RhteM8MzppeMigx3Dy1z0w","version":2}} -->

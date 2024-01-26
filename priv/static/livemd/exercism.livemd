@@ -1,0 +1,2288 @@
+# exercism (elixir)
+
+## bird count
+
+https://exercism.org/tracks/elixir/exercises/bird-count/
+
+* using recursion
+
+```elixir
+defmodule BirdCount do
+  def today([]), do: nil
+  def today([today | _prev]), do: today
+
+  def increment_day_count([]), do: [1]
+
+  def increment_day_count([today | prev]) do
+    [today([today | prev]) + 1 | prev]
+  end
+
+  def has_day_without_birds?([]), do: false
+
+  def has_day_without_birds?([today | prev]) do
+    cond do
+      today == 0 -> true
+      today != 0 -> has_day_without_birds?(prev)
+    end
+  end
+
+  def total([]), do: 0
+
+  def total([today | prev]) do
+    today + total(prev)
+  end
+
+  def busy_days([]), do: 0
+
+  def busy_days([today | prev]) do
+    cond do
+      today >= 5 -> 1 + busy_days(prev)
+      today < 5 -> busy_days(prev)
+    end
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, BirdCount, <<70, 79, 82, 49, 0, 0, 11, ...>>, {:busy_days, 1}}
+```
+
+```elixir
+# 1
+BirdCount.today([2, 5, 1])
+# => 2
+BirdCount.today([])
+
+# 2
+BirdCount.increment_day_count([4, 0, 2])
+# => [5, 0, 2]
+BirdCount.increment_day_count([])
+
+# 3
+BirdCount.has_day_without_birds?([2, 0, 4])
+# => true
+BirdCount.has_day_without_birds?([3, 8, 1, 5])
+# => false
+
+# 4
+BirdCount.total([4, 0, 9, 0, 5])
+# => 18
+BirdCount.total([])
+
+# 5
+BirdCount.busy_days([])
+BirdCount.busy_days([4, 5, 0, 0, 6])
+# => 2
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+2
+```
+
+## high score
+
+https://exercism.org/tracks/elixir/exercises/high-score
+
+* maps, attributes
+
+```elixir
+defmodule HighScore do
+  @default_score 0
+
+  def new() do
+    %{}
+  end
+
+  def add_player(scores, name, score \\ @default_score) do
+    scores
+    |> Map.put(name, score)
+  end
+
+  def remove_player(scores, name) do
+    scores
+    |> Map.delete(name)
+  end
+
+  def reset_score(scores, name) do
+    scores
+    |> add_player(name, @default_score)
+  end
+
+  def update_score(scores, name, score) do
+    scores
+    |> Map.update(name, score, fn old -> score + old end)
+  end
+
+  def get_players(scores) do
+    scores |> Map.keys()
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, HighScore, <<70, 79, 82, 49, 0, 0, 12, ...>>, {:get_players, 1}}
+```
+
+```elixir
+# 1
+# HighScore.new()
+# => %{}
+
+# 2
+# score_map = HighScore.new()
+# => %{}
+# score_map = HighScore.add_player(score_map, "Dave Thomas")
+# => %{"Dave Thomas" => 0}
+# score_map = HighScore.add_player(score_map, "José Valim", 486_373)
+# => %{"Dave Thomas" => 0, "José Valim"=> 486_373}
+
+# 3
+# score_map = HighScore.new()
+# => %{}
+# score_map = HighScore.add_player(score_map, "Dave Thomas")
+# => %{"Dave Thomas" => 0}
+# score_map = HighScore.remove_player(score_map, "Dave Thomas")
+# => %{}
+
+# 4
+# score_map = HighScore.new()
+# => %{}
+# score_map = HighScore.add_player(score_map, "José Valim", 486_373)
+# => %{"José Valim"=> 486_373}
+# score_map = HighScore.reset_score(score_map, "José Valim")
+# => %{"José Valim"=> 0}
+
+# 5
+# score_map = HighScore.new()
+# => %{}
+# score_map = HighScore.add_player(score_map, "José Valim", 486_373)
+# => %{"José Valim"=> 486_373}
+# score_map = HighScore.update_score(score_map, "José Valim", 5)
+# => %{"José Valim"=> 486_378}
+
+# 6
+score_map = HighScore.new()
+# => %{}
+score_map = HighScore.add_player(score_map, "Dave Thomas", 2_374)
+# => %{"Dave Thomas" => 2_374}
+score_map = HighScore.add_player(score_map, "José Valim", 486_373)
+# => %{"Dave Thomas" => 2_374, "José Valim"=> 486_373}
+HighScore.get_players(score_map)
+# => ["Dave Thomas", "José Valim"]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+["Dave Thomas", "José Valim"]
+```
+
+## city office
+
+https://exercism.org/tracks/elixir/exercises/city-office/edit
+
+* docs, typespecs
+
+```elixir
+defmodule Form do
+  @moduledoc """
+  A collection of loosely related functions helpful for filling out various forms at the city office.
+  """
+
+  @doc """
+  Generates a string of a given length.
+
+  This string can be used to fill out a form field that is supposed to have no value.
+  Such fields cannot be left empty because a malicious third party could fill them out with false data.
+  """
+
+  @spec blanks(non_neg_integer()) :: String.t()
+  def blanks(n) do
+    String.duplicate("X", n)
+  end
+
+  @doc """
+  Splits the string into a list of uppercase letters.
+
+  This is needed for form fields that don't offer a single input for the whole string,
+  but instead require splitting the string into a predefined number of single-letter inputs.
+  """
+
+  @spec letters(String.t()) :: list(String.t())
+  def letters(word) do
+    word
+    |> String.upcase()
+    |> String.split("", trim: true)
+  end
+
+  @doc """
+  Checks if the value has no more than the maximum allowed number of letters.
+
+  This is needed to check that the values of fields do not exceed the maximum allowed length.
+  It also tells you by how much the value exceeds the maximum.
+  """
+
+  @spec check_length(String.t(), non_neg_integer()) :: :ok | {:error, pos_integer()}
+  def check_length(word, length) do
+    diff = String.length(word) - length
+
+    if diff <= 0 do
+      :ok
+    else
+      {:error, diff}
+    end
+  end
+
+  @doc """
+  Formats the address as an uppercase multiline string.
+  """
+
+  @type address_map :: %{:street => String.t(), :postal_code => String.t(), :city => String.t()}
+  @type address_tuple :: {street :: String.t(), postal_code :: String.t(), city :: String.t()}
+  @type address :: address_map | address_tuple
+
+  @spec format_address(address()) :: String.t()
+  def format_address(%{street: street, postal_code: postal_code, city: city}) do
+    format_address({street, postal_code, city})
+  end
+
+  def format_address({street, postal_code, city}) do
+    """
+    #{String.upcase(street)}
+    #{String.upcase(postal_code)} #{String.upcase(city)}
+    """
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Form, <<70, 79, 82, 49, 0, 0, 15, ...>>, {:format_address, 1}}
+```
+
+```elixir
+age = 15
+
+case age do
+  0 -> ~c"infant"
+  age when age < 4 -> ~c"baby"
+  age when age < 13 -> ~c"child"
+  age when age < 18 -> ~c"teenager"
+  _ -> ~c"adult"
+end
+
+# => 'teenager'
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+~c"teenager"
+```
+
+## german sysadmin
+
+https://exercism.org/tracks/elixir/exercises/german-sysadmin
+
+* charlist, case
+
+```elixir
+defmodule Username do
+  def sanitize([]), do: ~c""
+
+  def sanitize([h | t]) do
+    # ä becomes ae
+    # ö becomes oe
+    # ü becomes ue
+    # ß becomes ss
+
+    sanitized =
+      case h do
+        ?ä -> ~c"ae"
+        ?ö -> ~c"oe"
+        ?ü -> ~c"ue"
+        ?ß -> ~c"ss"
+        h when (h >= ?a and h <= ?z) or h == ?_ -> [h]
+        h when h < ?a or h > ?z -> ~c""
+      end
+
+    sanitized ++ sanitize(t)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Username, <<70, 79, 82, 49, 0, 0, 8, ...>>, {:sanitize, 1}}
+```
+
+```elixir
+# 1
+Username.sanitize(~c"schmidt1985")
+input = Enum.to_list(0..1_114_111) -- [95, 223, 228, 246, 252]
+Username.sanitize(input)
+Username.sanitize(~c"")
+# => 'schmidt'
+
+# 2
+Username.sanitize(~c"mark_fischer$$$")
+# => 'mark_fischer'
+
+# 3
+Username.sanitize(~c"cäcilie_weiß")
+# => 'caecilie_weiss'
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+~c"caecilie_weiss"
+```
+
+## rpg character sheet
+
+https://exercism.org/tracks/elixir/exercises/rpg-character-sheet
+
+* io
+
+```elixir
+defmodule RPG.CharacterSheet do
+  def welcome() do
+    IO.puts("Welcome! Let's fill out your character sheet together.")
+  end
+
+  def ask_name() do
+    IO.gets("What is your character's name?\n")
+    |> String.trim()
+  end
+
+  def ask_class() do
+    IO.gets("What is your character's class?\n")
+    |> String.trim()
+  end
+
+  def ask_level() do
+    IO.gets("What is your character's level?\n")
+    |> String.trim()
+    |> String.to_integer()
+  end
+
+  def run() do
+    welcome()
+    name = ask_name()
+    class = ask_class()
+    level = ask_level()
+
+    IO.inspect(%{class: class, level: level, name: name}, label: "Your character")
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, RPG.CharacterSheet, <<70, 79, 82, 49, 0, 0, 11, ...>>, {:run, 0}}
+```
+
+```elixir
+# 1
+RPG.CharacterSheet.welcome()
+# > Welcome! Let's fill out your character sheet together.
+# => :ok
+
+# 2
+# RPG.CharacterSheet.ask_name()
+# > What is your character's name?
+# < Mathilde
+# => "Mathilde"
+
+# 3
+# RPG.CharacterSheet.ask_class()
+# > What is your character's class?
+# < healer
+# => "healer"
+
+# 4
+# RPG.CharacterSheet.ask_level()
+# > What is your character's level?
+# < 2
+# => 2
+
+# 5
+# RPG.CharacterSheet.run()
+# > Welcome! Let's fill out your character sheet together.
+# > What is your character's name?
+# < Mathilde
+# > What is your character's class?
+# < healer
+# > What is your character's level?
+# < 2
+# > Your character: %{class: "healer", level: 2, name: "Mathilde"}
+# => %{class: "healer", level: 2, name: "Mathilde"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Welcome! Let's fill out your character sheet together.
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## name badge
+
+https://exercism.org/tracks/elixir/exercises/name-badge
+
+* if, nil
+
+```elixir
+defmodule NameBadge do
+  def print(id, name, department) do
+    i = if(id, do: "[#{id}] - ", else: "")
+    dep = if(department, do: department |> String.upcase(), else: "OWNER")
+    "#{i}#{name} - #{dep}"
+  end
+end
+
+# 1
+# NameBadge.print(67, "Katherine Williams", "Strategic Communication")
+# => "[67] - Katherine Williams - STRATEGIC COMMUNICATION"
+
+# 2
+# NameBadge.print(nil, "Robert Johnson", "Procurement")
+# => "Robert Johnson - PROCUREMENT"
+
+# 3
+# NameBadge.print(204, "Rachel Miller", nil)
+# => "[204] - Rachel Miller - OWNER"
+
+# 4
+NameBadge.print(nil, "Rachel Miller", nil)
+# => "Rachel Miller - OWNER"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"Rachel Miller - OWNER"
+```
+
+## take-a-number
+
+https://exercism.org/tracks/elixir/exercises/take-a-number
+
+* pids, processes
+
+```elixir
+defmodule TakeANumber do
+  def start() do
+    spawn(Receiver, :run, [0])
+  end
+end
+
+defmodule Receiver do
+  def run(x) do
+    receive do
+      {:report_state, sender_pid} ->
+        send(sender_pid, x)
+        run(x)
+
+      {:take_a_number, sender_pid} ->
+        send(sender_pid, x + 1)
+        run(x + 1)
+
+      :stop ->
+        :ok
+
+      _ ->
+        run(x)
+    end
+  end
+end
+
+# 1
+# TakeANumber.start()
+# => #PID<0.138.0>
+
+# 2
+# machine_pid = TakeANumber.start()
+# send(machine_pid, {:report_state, self()})
+
+# receive do
+#   msg -> msg
+# end
+# => 0
+
+# 3
+# machine_pid = TakeANumber.start()
+# send(machine_pid, {:take_a_number, self()})
+
+# receive do
+#   msg -> msg
+# end
+# => 1
+
+# 4
+
+# 5
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Receiver, <<70, 79, 82, 49, 0, 0, 8, ...>>, {:run, 1}}
+```
+
+## wine cellar
+
+https://exercism.org/tracks/elixir/exercises/wine-cellar/
+
+* keyword lists
+
+```elixir
+defmodule WineCellar do
+  def explain_colors do
+    [
+      white: "Fermented without skin contact.",
+      red: "Fermented with skin contact using dark-colored grapes.",
+      rose: "Fermented with some skin contact, but not enough to qualify as a red wine."
+    ]
+  end
+
+  def filter(cellar, color, opts \\ []) do
+    cellar
+    |> Keyword.get_values(color)
+    |> filter_by_year(opts[:year])
+    |> filter_by_country(opts[:country])
+  end
+
+  defp filter_by_year(wines, nil), do: wines
+  defp filter_by_country(wines, nil), do: wines
+
+  # The functions below do not need to be modified.
+
+  defp filter_by_year(wines, year)
+  defp filter_by_year([], _year), do: []
+
+  defp filter_by_year([{_, year, _} = wine | tail], year) do
+    [wine | filter_by_year(tail, year)]
+  end
+
+  defp filter_by_year([{_, _, _} | tail], year) do
+    filter_by_year(tail, year)
+  end
+
+  defp filter_by_country(wines, country)
+  defp filter_by_country([], _country), do: []
+
+  defp filter_by_country([{_, _, country} = wine | tail], country) do
+    [wine | filter_by_country(tail, country)]
+  end
+
+  defp filter_by_country([{_, _, _} | tail], country) do
+    filter_by_country(tail, country)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+warning: clauses with the same name and arity (number of arguments) should be grouped together, "defp filter_by_year/2" was previously defined (Library/Mobile Documents/com~apple~CloudDocs/Developer/learn-elixir/exercism.livemd#cell:aie2skujmc7fqggqgsnxm7m55clcskw4:17)
+  Library/Mobile Documents/com~apple~CloudDocs/Developer/learn-elixir/exercism.livemd#cell:aie2skujmc7fqggqgsnxm7m55clcskw4:22
+
+warning: clauses with the same name and arity (number of arguments) should be grouped together, "defp filter_by_country/2" was previously defined (Library/Mobile Documents/com~apple~CloudDocs/Developer/learn-elixir/exercism.livemd#cell:aie2skujmc7fqggqgsnxm7m55clcskw4:18)
+  Library/Mobile Documents/com~apple~CloudDocs/Developer/learn-elixir/exercism.livemd#cell:aie2skujmc7fqggqgsnxm7m55clcskw4:33
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, WineCellar, <<70, 79, 82, 49, 0, 0, 12, ...>>, {:filter_by_country, 2}}
+```
+
+```elixir
+# 1
+# WineCellar.explain_colors()
+
+# 2
+# WineCellar.filter(
+#   [
+#     white: {"Chardonnay", 2015, "Italy"},
+#     white: {"Pinot grigio", 2017, "Germany"},
+#     red: {"Pinot noir", 2016, "France"},
+#     rose: {"Dornfelder", 2018, "Germany"}
+#   ],
+#   :white
+# )
+# => [
+#      {"Chardonnay", 2015, "Italy"},
+#      {"Pinot grigio", 2017, "Germany"}
+#    ]
+
+# cellar = [
+#   white: {"Chardonnay", 2015, "Italy"},
+#   white: {"Chardonnay", 2014, "France"},
+#   rose: {"Dornfelder", 2018, "Germany"},
+#   red: {"Merlot", 2015, "France"},
+#   white: {"Riesling ", 2017, "Germany"},
+#   white: {"Pinot grigio", 2015, "Germany"},
+#   red: {"Pinot noir", 2016, "France"},
+#   red: {"Pinot noir", 2013, "Italy"}
+# ]
+
+# WineCellar.filter(cellar, :white)
+
+# 3
+# WineCellar.filter(
+#   [
+#     white: {"Chardonnay", 2015, "Italy"},
+#     white: {"Pinot grigio", 2017, "Germany"},
+#     red: {"Pinot noir", 2016, "France"},
+#     rose: {"Dornfelder", 2018, "Germany"}
+#   ],
+#   :white,
+#   year: 2015
+# )
+# => [
+#      {"Chardonnay", 2015, "Italy"}
+#    ]
+
+# 4
+WineCellar.filter(
+  [
+    white: {"Chardonnay", 2015, "Italy"},
+    white: {"Pinot grigio", 2017, "Germany"},
+    red: {"Pinot noir", 2016, "France"},
+    rose: {"Dornfelder", 2018, "Germany"}
+  ],
+  :white,
+  year: 2015,
+  country: "Germany"
+)
+
+# => []
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[]
+```
+
+## dna encoding
+
+https://exercism.org/tracks/elixir/exercises/dna-encoding
+
+* bitstrings, tail recursion
+
+```elixir
+defmodule DNA do
+  def encode_nucleotide(code_point) do
+    case code_point do
+      65 -> 0b0001
+      67 -> 0b0010
+      71 -> 0b0100
+      84 -> 0b1000
+      32 -> 0b0000
+    end
+  end
+
+  def decode_nucleotide(encoded_code) do
+    case encoded_code do
+      0b0001 -> ?A
+      0b0010 -> ?C
+      0b0100 -> ?G
+      0b1000 -> ?T
+      0b0000 -> ?\s
+    end
+  end
+
+  def encode([first | rest]) do
+    <<encode_nucleotide(first)::4, encode(rest)::bitstring>>
+  end
+
+  def encode([]) do
+    <<>>
+  end
+
+  def decode(<<first::4, rest::bitstring>>) do
+    [decode_nucleotide(first) | decode(rest)]
+  end
+
+  def decode(<<>>) do
+    ~c""
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, DNA, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:decode, 1}}
+```
+
+```elixir
+# 1
+# DNA.encode_nucleotide(?A)
+# => 0b0001
+
+# 2
+# DNA.decode_nucleotide(0b0001)
+# => ?A
+
+# 3
+# DNA.encode('AC GT')
+# => <<18, 4, 8::size(4)>>
+
+# 4
+DNA.decode(<<132, 2, 1::size(4)>>)
+# => 'TG CA'
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+~c"TG CA"
+```
+
+## library fees
+
+https://exercism.org/tracks/elixir/exercises/library-fees/
+
+* date and time
+
+```elixir
+defmodule LibraryFees do
+  def datetime_from_string(string) do
+    string |> NaiveDateTime.from_iso8601!()
+  end
+
+  def before_noon?(datetime) do
+    :lt ==
+      datetime
+      |> NaiveDateTime.to_time()
+      |> Time.compare(~T[12:00:00])
+  end
+
+  def return_date(checkout_datetime) do
+    noon = if before_noon?(checkout_datetime), do: 28, else: 29
+
+    checkout_datetime
+    |> NaiveDateTime.add(24 * 60 * 60 * noon)
+    |> NaiveDateTime.to_date()
+  end
+
+  def days_late(planned_return_date, actual_return_datetime) do
+    diff =
+      actual_return_datetime
+      |> NaiveDateTime.to_date()
+      |> Date.diff(planned_return_date)
+
+    if diff < 1, do: 0, else: diff
+  end
+
+  def monday?(datetime) do
+    1 ==
+      datetime
+      |> NaiveDateTime.to_date()
+      |> Date.day_of_week()
+  end
+
+  def calculate_late_fee(checkout, return, rate) do
+    checkout_ndt = checkout |> datetime_from_string()
+    return_ndt = return |> datetime_from_string()
+
+    late = days_late(checkout_ndt |> return_date(), return_ndt)
+    if return_ndt |> monday?(), do: trunc(late * rate * 0.5), else: late * rate
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, LibraryFees, <<70, 79, 82, 49, 0, 0, 15, ...>>, {:calculate_late_fee, 3}}
+```
+
+```elixir
+# 1
+# LibraryFees.datetime_from_string("2021-01-01T13:30:45Z")
+# => ~N[2021-01-01 13:30:45]
+
+# 2
+# LibraryFees.before_noon?(~N[2021-01-12 08:23:03])
+# => true
+
+# 3
+# LibraryFees.return_date(~N[2020-11-28 15:55:33])
+# => ~D[2020-12-27]
+
+# 4
+# LibraryFees.days_late(~D[2020-12-27], ~N[2021-01-03 09:23:36])
+# => 7
+
+# 5
+# LibraryFees.monday?(~N[2021-01-03 13:30:45Z])
+# => false
+
+# 6
+# Sunday, 7 days late
+# LibraryFees.calculate_late_fee("2020-11-28T15:55:33Z", "2021-01-03T13:30:45Z", 100)
+# => 700
+
+# one day later, Monday, 8 days late
+LibraryFees.calculate_late_fee("2020-11-28T15:55:33Z", "2021-01-04T09:02:11Z", 100)
+# => 400
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+400
+```
+
+## boutique inventory
+
+https://exercism.org/tracks/elixir/exercises/boutique-inventory
+
+* enums, maps
+
+```elixir
+defmodule BoutiqueInventory do
+  def sort_by_price(inventory) do
+    inventory
+    |> Enum.sort_by(fn x -> x |> Map.get(:price) end)
+  end
+
+  def with_missing_price(inventory) do
+    inventory
+    |> Enum.filter(fn x -> x |> Map.get(:price) == nil end)
+  end
+
+  defp replace_name(map, key, old_word, new_word) do
+    map
+    |> Map.update(key, new_word, fn x -> x |> String.replace(old_word, new_word) end)
+  end
+
+  def update_names(inventory, old_word, new_word) do
+    inventory
+    |> Enum.map(fn x -> x |> replace_name(:name, old_word, new_word) end)
+  end
+
+  defp increase_qty_sizes(map, count) do
+    map
+    |> Enum.into(%{}, fn {k, v} -> {k, v + count} end)
+  end
+
+  def increase_quantity(item, count) do
+    item
+    |> Map.update(:quantity_by_size, count, fn x -> x |> increase_qty_sizes(count) end)
+  end
+
+  def total_quantity(item) do
+    item
+    |> Map.get(:quantity_by_size)
+    |> Enum.reduce(0, fn {_, y}, acc -> y + acc end)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, BoutiqueInventory, <<70, 79, 82, 49, 0, 0, 16, ...>>, {:total_quantity, 1}}
+```
+
+```elixir
+# 1
+BoutiqueInventory.sort_by_price([
+  %{price: 65, name: "Maxi Brown Dress", quantity_by_size: %{}},
+  %{price: 50, name: "Red Short Skirt", quantity_by_size: %{}},
+  %{price: 50, name: "Black Short Skirt", quantity_by_size: %{}},
+  %{price: 20, name: "Bamboo Socks Cats", quantity_by_size: %{}}
+])
+
+# => [
+#      %{price: 20, name: "Bamboo Socks Cats", quantity_by_size: %{}},
+#      %{price: 50, name: "Red Short Skirt", quantity_by_size: %{}},
+#      %{price: 50, name: "Black Short Skirt", quantity_by_size: %{}},
+#      %{price: 65, name: "Maxi Brown Dress", price: 65, quantity_by_size: %{}}
+#    ]
+
+# 2
+BoutiqueInventory.with_missing_price([
+  %{price: 40, name: "Black T-shirt", quantity_by_size: %{}},
+  %{price: nil, name: "Denim Pants", quantity_by_size: %{}},
+  %{price: nil, name: "Denim Skirt", quantity_by_size: %{}},
+  %{price: 40, name: "Orange T-shirt", quantity_by_size: %{}}
+])
+
+# => [
+#      %{price: nil, name: "Denim Pants", quantity_by_size: %{}},
+#      %{price: nil, name: "Denim Skirt", quantity_by_size: %{}}
+#    ]
+
+# 3
+BoutiqueInventory.update_names(
+  [
+    %{price: 40, name: "Black T-shirt", quantity_by_size: %{}},
+    %{price: 70, name: "Denim Pants", quantity_by_size: %{}},
+    %{price: 65, name: "Denim Skirt", quantity_by_size: %{}},
+    %{price: 40, name: "Orange T-shirt", quantity_by_size: %{}}
+  ],
+  "T-shirt",
+  "Tee"
+)
+
+# => [
+#      %{price: 40, name: "Black Tee", quantity_by_size: %{}},
+#      %{price: 70, name: "Denim Pants", quantity_by_size: %{}},
+#      %{price: 65, name: "Denim Skirt", quantity_by_size: %{}},
+#      %{price: 40, name: "Orange Tee", quantity_by_size: %{}}
+#    ]
+
+# 4
+BoutiqueInventory.increase_quantity(
+  %{
+    name: "Polka Dot Skirt",
+    price: 68,
+    quantity_by_size: %{s: 3, m: 5, l: 3, xl: 4}
+  },
+  6
+)
+
+# => %{
+#      name: "Polka Dot Skirt",
+#      price: 68,
+#      quantity_by_size: %{l: 9, m: 11, s: 9, xl: 10}
+#    }
+
+# 5
+BoutiqueInventory.total_quantity(%{
+  name: "Red Shirt",
+  price: 62,
+  quantity_by_size: %{s: 3, m: 6, l: 5, xl: 2}
+})
+
+# => 16
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+16
+```
+
+## boutique suggestions
+
+https://exercism.org/tracks/elixir/exercises/boutique-suggestions
+
+* list comprehensions
+
+```elixir
+# inputs in the actual tests have complete keys apparently
+defmodule BoutiqueSuggestions do
+  def get_combinations(tops, bottoms, options \\ []) do
+    p = options |> Keyword.get(:maximum_price, 100)
+
+    for x <- tops,
+        y <- bottoms,
+        x[:base_color] != y[:base_color],
+        x[:price] + y[:price] <= p,
+        do: {x, y}
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, BoutiqueSuggestions, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:get_combinations, 3}}
+```
+
+```elixir
+# 1
+# tops = [
+#   %{item_name: "Dress shirt"},
+#   %{item_name: "Casual shirt"}
+# ]
+
+# bottoms = [
+#   %{item_name: "Jeans"},
+#   %{item_name: "Dress trousers"}
+# ]
+
+# BoutiqueSuggestions.get_combinations(tops, bottoms)
+# => [
+#      {%{item_name: "Dress shirt"}, %{item_name: "Jeans"}},
+#      {%{item_name: "Dress shirt"}, %{item_name: "Dress trousers"}},
+#      {%{item_name: "Casual shirt"}, %{item_name: "Jeans"}},
+#      {%{item_name: "Casual shirt"}, %{item_name: "Dress trousers"}}
+#    ]
+
+# 2
+# tops = [
+#   %{item_name: "Dress shirt", base_color: "blue"},
+#   %{item_name: "Casual shirt", base_color: "black"}
+# ]
+# bottoms = [
+#   %{item_name: "Jeans", base_color: "blue"},
+#   %{item_name: "Dress trousers", base_color: "black"}
+# ]
+# BoutiqueSuggestions.get_combinations(tops, bottoms)
+# => [
+#      {%{item_name: "Dress shirt", base_color: "blue"},
+#       %{item_name: "Dress trousers", base_color: "black"}},
+#      {%{item_name: "Casual shirt", base_color: "black"},
+#       %{item_name: "Jeans", base_color: "blue"}}
+#    ]
+
+# 3
+tops = [
+  %{item_name: "Dress shirt", base_color: "blue", price: 35},
+  %{item_name: "Casual shirt", base_color: "black", price: 20}
+]
+
+bottoms = [
+  %{item_name: "Jeans", base_color: "blue", price: 30},
+  %{item_name: "Dress trousers", base_color: "black", price: 75}
+]
+
+BoutiqueSuggestions.get_combinations(tops, bottoms, maximum_price: 50)
+# => [
+#      {%{item_name: "Casual shirt", base_color: "black", price: 20},
+#       %{item_name: "Jeans", base_color: "blue", price: 30}}
+#    ]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  {%{price: 20, base_color: "black", item_name: "Casual shirt"},
+    %{price: 30, base_color: "blue", item_name: "Jeans"}}
+]
+```
+
+## take a number
+
+<!-- livebook:{"continue_on_error":true} -->
+
+```elixir
+defmodule TakeANumber do
+  def start() do
+    spawn(Receiver, :run, [0])
+  end
+end
+
+defmodule Receiver do
+  def run(x) do
+    receive do
+      {:report_state, sender_pid} ->
+        send(sender_pid, x)
+        run(x)
+
+      {:take_a_number, sender_pid} ->
+        send(sender_pid, x + 1)
+        run(x + 1)
+
+      :stop ->
+        :ok
+
+      _ ->
+        run(x)
+    end
+  end
+end
+```
+
+```elixir
+# 1
+# pid = TakeANumber.start()
+# assert is_pid(pid)
+# assert pid != self()
+# assert pid != TakeANumber.start()
+
+# 2
+# machine_pid = TakeANumber.start()
+# send(machine_pid, {:report_state, self()})
+# receive do
+#   msg -> msg
+# end
+# => 0
+
+# 3
+machine_pid = TakeANumber.start()
+send(machine_pid, {:take_a_number, self()})
+
+receive do
+  msg -> msg
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+1
+```
+
+## dna encoding
+
+```elixir
+to_charlist([99, 97, 116])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+~c"cat"
+```
+
+```elixir
+~c"hełło"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[104, 101, 322, 322, 111]
+```
+
+```elixir
+<<1::1, 0::1, 0::1, 0::1>> == <<8::4>>
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+<<0::1, 1::1, 0::1>> == <<2::size(3)>>
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+<<1::1, 1::1, 1::1, 1::1, 1::1, 0::1, 1::1, 1::1>> == <<251>>
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+{?A, ?C, ?G, ?T, ?\s}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{65, 67, 71, 84, 32}
+```
+
+```elixir
+defmodule DNA2 do
+  def encode_nucleotide(code_point) do
+    case code_point do
+      65 -> 0b0001
+      67 -> 0b0010
+      71 -> 0b0100
+      84 -> 0b1000
+      32 -> 0b0000
+    end
+  end
+
+  def decode_nucleotide(encoded_code) do
+    case encoded_code do
+      0b0001 -> ?A
+      0b0010 -> ?C
+      0b0100 -> ?G
+      0b1000 -> ?T
+      0b0000 -> ?\s
+    end
+  end
+
+  def encode([first | rest]) do
+    <<encode_nucleotide(first)::4, encode(rest)::bitstring>>
+  end
+
+  def encode([]) do
+    <<>>
+  end
+
+  def decode(<<first::4, rest::bitstring>>) do
+    [decode_nucleotide(first) | decode(rest)]
+  end
+
+  def decode(<<>>) do
+    ~c""
+  end
+end
+
+# 1
+# DNA.encode_nucleotide(?A)
+# => 0b0001
+
+# 2
+# DNA.decode_nucleotide(0b0001)
+# => ?A
+
+# 3
+# DNA.encode('AC GT')
+# => <<18, 4, 8::size(4)>>
+
+# 4
+DNA2.decode(<<132, 2, 1::size(4)>>)
+# => 'TG CA'
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+~c"TG CA"
+```
+
+## basketball website
+
+```elixir
+defmodule BasketballWebsite do
+  def extract_from_path(data, path) do
+    [first | rest] = path |> String.split(".")
+    get_from_path(data[first], rest)
+  end
+
+  def get_from_path(data, [first | rest]) do
+    get_from_path(data[first], rest)
+  end
+
+  def get_from_path(data, []) do
+    data
+  end
+
+  def get_in_path(data, path) do
+    get_in(data, path |> String.split("."))
+  end
+end
+
+# 1
+data = %{
+  "team_mascot" => %{
+    "animal" => "bear",
+    "actor" => %{
+      "first_name" => "Noel"
+    }
+  }
+}
+
+# BasketballWebsite.extract_from_path(data, "team_mascot.animal")
+# => "bear"
+# BasketballWebsite.extract_from_path(data, "team_mascot.colors")
+# => nil
+
+# 2
+BasketballWebsite.get_in_path(data, "team_mascot.actor.first_name")
+# => "Noel"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"Noel"
+```
+
+## file sniffer
+
+```elixir
+defmodule FileSniffer do
+  def type_from_extension(extension) do
+    case extension do
+      "exe" -> "application/octet-stream"
+      "bmp" -> "image/bmp"
+      "png" -> "image/png"
+      "jpg" -> "image/jpg"
+      "gif" -> "image/gif"
+      _ -> nil
+    end
+  end
+
+  def type_from_binary(<<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, _body::binary>>) do
+    "image/png"
+  end
+
+  def type_from_binary(<<0x7F, 0x45, 0x4C, 0x46, _body::binary>>) do
+    "application/octet-stream"
+  end
+
+  def type_from_binary(<<0xFF, 0xD8, 0xFF, _body::binary>>) do
+    "image/jpg"
+  end
+
+  def type_from_binary(<<0x47, 0x49, 0x46, _body::binary>>) do
+    "image/gif"
+  end
+
+  def type_from_binary(<<0x42, 0x4D, _body::binary>>) do
+    "image/bmp"
+  end
+
+  def type_from_binary(<<_body::binary>>) do
+    nil
+  end
+
+  def verify(file_binary, extension) do
+    ext = FileSniffer.type_from_extension(extension)
+
+    if FileSniffer.type_from_binary(file_binary) == ext do
+      {:ok, ext}
+    else
+      {:error, "Warning, file format and file extension do not match."}
+    end
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, FileSniffer, <<70, 79, 82, 49, 0, 0, 13, ...>>, {:verify, 2}}
+```
+
+## chessboard
+
+```elixir
+defmodule Chessboard do
+  def rank_range do
+    1..8
+  end
+
+  def file_range do
+    ?A..?H
+  end
+
+  def ranks do
+    rank_range() |> Enum.to_list()
+  end
+
+  def files do
+    file_range()
+    |> Enum.to_list()
+    |> List.to_string()
+    |> String.codepoints()
+  end
+end
+
+# 1
+# Chessboard.rank_range()
+
+# 2
+# Chessboard.file_range()
+
+# 3
+# Chessboard.ranks()
+
+# 4
+Chessboard.files()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+["A", "B", "C", "D", "E", "F", "G", "H"]
+```
+
+## remote control car
+
+```elixir
+defmodule RemoteControlCar do
+  @enforce_keys [:nickname]
+  defstruct [:nickname, battery_percentage: 100, distance_driven_in_meters: 0]
+
+  def new(nickname \\ "none"), do: %RemoteControlCar{nickname: nickname}
+
+  def display_distance(%RemoteControlCar{distance_driven_in_meters: distance}),
+    do: "#{distance} meters"
+
+  def display_battery(%RemoteControlCar{battery_percentage: 0}), do: "Battery empty"
+
+  def display_battery(%RemoteControlCar{battery_percentage: battery}),
+    do: "Battery at #{battery}%"
+
+  def drive(%RemoteControlCar{battery_percentage: 0} = remote_car), do: remote_car
+
+  def drive(%RemoteControlCar{} = remote_car) do
+    %{
+      remote_car
+      | battery_percentage: remote_car.battery_percentage - 1,
+        distance_driven_in_meters: remote_car.distance_driven_in_meters + 20
+    }
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, RemoteControlCar, <<70, 79, 82, 49, 0, 0, 18, ...>>, {:drive, 1}}
+```
+
+```elixir
+# 1
+# RemoteControlCar.new()
+# => %RemoteControlCar{
+#      battery_percentage: 100,
+#      distance_driven_in_meters: 0,
+#      nickname: "none"
+#    }
+
+# 2
+# RemoteControlCar.new("Blue")
+# => %RemoteControlCar{
+#      battery_percentage: 100,
+#      distance_driven_in_meters: 0,
+#      nickname: "Blue"
+#    }
+
+# 3
+# car = RemoteControlCar.new()
+# car = %{battery_percentage: 100, distance_driven_in_meters: 0, nickname: "Fake"}
+# RemoteControlCar.display_distance(car)
+# => "0 meters"
+
+# 4
+# car = RemoteControlCar.new()
+# RemoteControlCar.display_battery(car)
+# => "Battery at 100%"
+
+# 5
+# RemoteControlCar.new("Red")
+# |> RemoteControlCar.drive()
+
+# => %RemoteControlCar{
+#      battery_percentage: 99,
+#      distance_driven_in_meters: 20,
+#      nickname: "Red"
+#    }
+
+# 6
+%RemoteControlCar{
+  battery_percentage: 0,
+  distance_driven_in_meters: 1980,
+  nickname: "Red"
+}
+|> RemoteControlCar.drive()
+|> RemoteControlCar.display_battery()
+
+# => %RemoteControlCar{
+#      battery_percentage: 0,
+#      distance_driven_in_meters: 1980,
+#      nickname: "Red"
+#    }
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"Battery empty"
+```
+
+## newsletter
+
+```elixir
+defmodule Newsletter do
+  def read_emails(path) do
+    path |> File.read!() |> String.split()
+  end
+
+  def open_log(path) do
+    File.open!(path, [:write])
+  end
+
+  def log_sent_email(pid, email) do
+    IO.write(pid, email <> "\n")
+  end
+
+  def close_log(pid) do
+    File.close(pid)
+  end
+
+  def send_newsletter(emails_path, log_path, send_fun) do
+    emails = read_emails(emails_path)
+    pid = open_log(log_path)
+
+    for email <- emails do
+      if :ok == send_fun.(email), do: log_sent_email(pid, email)
+    end
+
+    close_log(pid)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Newsletter, <<70, 79, 82, 49, 0, 0, 12, ...>>, {:send_newsletter, 3}}
+```
+
+## bread and potions
+
+```elixir
+defmodule RPG do
+  defmodule Character do
+    defstruct health: 100, mana: 0
+  end
+
+  defmodule LoafOfBread do
+    defstruct []
+  end
+
+  defmodule ManaPotion do
+    defstruct strength: 10
+  end
+
+  defmodule Poison do
+    defstruct []
+  end
+
+  defmodule EmptyBottle do
+    defstruct []
+  end
+
+  defprotocol Edible do
+    def eat(item, character)
+  end
+
+  defimpl Edible, for: LoafOfBread do
+    def eat(_item, %Character{} = character) do
+      {nil, %{character | health: character.health + 5}}
+    end
+  end
+
+  defimpl Edible, for: ManaPotion do
+    def eat(item, %Character{} = character) do
+      {%EmptyBottle{}, %{character | mana: character.mana + item.strength}}
+    end
+  end
+
+  defimpl Edible, for: Poison do
+    def eat(_item, %Character{} = character) do
+      {%EmptyBottle{}, %{character | health: 0}}
+    end
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, RPG, <<70, 79, 82, 49, 0, 0, 5, ...>>,
+  {:module, RPG.Edible.RPG.Poison, <<70, 79, 82, ...>>, {:eat, 2}}}
+```
+
+```elixir
+# 1
+
+# 2
+# RPG.Edible.eat(%RPG.LoafOfBread{}, %RPG.Character{health: 31})
+# => {nil, %RPG.Character{health: 36, mana: 0}}
+
+# 3
+# RPG.Edible.eat(%RPG.ManaPotion{strength: 13}, %RPG.Character{mana: 50})
+# => {%RPG.EmptyBottle{}, %RPG.Character{health: 100, mana: 63}}
+
+# 4
+RPG.Edible.eat(%RPG.Poison{}, %RPG.Character{health: 3000})
+# => {%RPG.EmptyBottle{}, %RPG.Character{health: 0, mana: 0}}
+
+# NOTE
+# "dispatching will always be based on the data type of the first input"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{%RPG.EmptyBottle{}, %RPG.Character{health: 0, mana: 0}}
+```
+
+## need for speed
+
+```elixir
+defmodule NeedForSpeed do
+  alias NeedForSpeed.Race
+  alias NeedForSpeed.RemoteControlCar, as: Car
+  import IO, only: [puts: 1]
+  import IO.ANSI, except: [color: 1]
+
+  # Do not edit the code below.
+
+  # def print_race(%Race{} = race) do
+  #   puts("""
+  #   🏁 #{race.title} 🏁
+  #   Status: #{Race.display_status(race)}
+  #   Distance: #{Race.display_distance(race)}
+
+  #   Contestants:
+  #   """)
+
+  #   race.cars
+  #   |> Enum.sort_by(&(-1 * &1.distance_driven_in_meters))
+  #   |> Enum.with_index()
+  #   |> Enum.each(fn {car, index} -> print_car(car, index + 1) end)
+  # end
+
+  # defp print_car(%Car{} = car, index) do
+  #   color = color(car)
+
+  #   puts("""
+  #     #{index}. #{color}#{car.nickname}#{default_color()}
+  #     Distance: #{Car.display_distance(car)}
+  #     Battery: #{Car.display_battery(car)}
+  #   """)
+  # end
+
+  # defp color(%Car{} = car) do
+  #   case car.color do
+  #     :red -> red()
+  #     :blue -> cyan()
+  #     :green -> green()
+  #   end
+  # end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+warning: unused alias Car
+  Library/Mobile Documents/com~apple~CloudDocs/Developer/learn-elixir/exercism.livemd#cell:b5le7kejnnzpkzwk7q33vb6cfd4ndkoc:3
+
+warning: unused alias Race
+  Library/Mobile Documents/com~apple~CloudDocs/Developer/learn-elixir/exercism.livemd#cell:b5le7kejnnzpkzwk7q33vb6cfd4ndkoc:2
+
+warning: unused import IO
+  Library/Mobile Documents/com~apple~CloudDocs/Developer/learn-elixir/exercism.livemd#cell:b5le7kejnnzpkzwk7q33vb6cfd4ndkoc:4
+
+warning: unused import IO.ANSI
+  Library/Mobile Documents/com~apple~CloudDocs/Developer/learn-elixir/exercism.livemd#cell:b5le7kejnnzpkzwk7q33vb6cfd4ndkoc:5
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, NeedForSpeed, <<70, 79, 82, 49, 0, 0, 5, ...>>, IO.ANSI}
+```
+
+## rpn calculator
+
+```elixir
+defmodule RPNCalculator do
+  def calculate!(stack, operation) do
+    operation.(stack)
+  end
+
+  def calculate(stack, operation) do
+    try do
+      {:ok, operation.(stack)}
+    rescue
+      _ -> :error
+    end
+  end
+
+  def calculate_verbose(stack, operation) do
+    try do
+      {:ok, operation.(stack)}
+    rescue
+      e in ArgumentError -> {:error, e.message}
+    end
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, RPNCalculator, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:calculate_verbose, 2}}
+```
+
+```elixir
+# 1
+# stack = []
+# operation = fn _ -> :ok end
+# RPNCalculator.calculate!(stack, operation)
+# => :ok
+
+# stack = []
+# operation = fn _ -> raise ArgumentError, "An error occurred" end
+# RPNCalculator.calculate!(stack, operation)
+# => ** (ArgumentError) An error occurred
+
+# 2
+# stack = []
+# operation = fn _ -> "operation completed" end
+# RPNCalculator.calculate(stack, operation)
+# => {:ok, "operation completed"}
+
+# stack = []
+# operation = fn _ -> raise ArgumentError, "An error occurred" end
+# operation = fn _ -> raise "test error" end
+# RPNCalculator.calculate(stack, operation)
+# => :error
+
+# 3
+# stack = []
+# operation = fn _ -> "operation completed" end
+# RPNCalculator.calculate_verbose(stack, operation)
+# => {:ok, "operation completed"}
+
+stack = []
+# operation = fn _ -> raise ArgumentError, "An error occurred" end
+operation = fn _ -> raise ArgumentError, "test error" end
+RPNCalculator.calculate_verbose(stack, operation)
+# => {:error, "An error occurred"}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:error, "test error"}
+```
+
+## stack underflow
+
+```elixir
+defmodule RPNCalculator.Exception do
+  defmodule DivisionByZeroError do
+    defexception message: "division by zero occurred"
+  end
+
+  defmodule StackUnderflowError do
+    defexception message: "stack underflow occurred"
+
+    @impl true
+    def exception(value) do
+      case value do
+        [] ->
+          %StackUnderflowError{}
+
+        _ ->
+          %StackUnderflowError{message: "stack underflow occurred, context: " <> value}
+      end
+    end
+  end
+
+  def divide([]), do: raise(StackUnderflowError, "when dividing")
+  def divide([_x]), do: raise(StackUnderflowError, "when dividing")
+  def divide([0, _y]), do: raise(DivisionByZeroError)
+  def divide([x, y]), do: div(y, x)
+end
+
+# 1
+# raise DivisionByZeroError
+# => ** (DivisionByZeroError) division by zero occurred
+
+# 2
+# raise RPNCalculator.Exception.StackUnderflowError
+# => ** (StackUnderflowError) stack underflow occurred
+
+# raise RPNCalculator.Exception.StackUnderflowError, "when dividing"
+# => ** (StackUnderflowError) stack underflow occurred, context: when dividing
+
+# 3
+# RPNCalculator.Exception.divide([0])
+# => ** (StackUnderflowError) stack underflow occurred, context: when dividing
+
+# RPNCalculator.Exception.divide([0, 100])
+# => ** (DivisionByZeroError) division by zero occurred
+
+RPNCalculator.Exception.divide([4, 16])
+# => 4
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+4
+```
+
+## new passport
+
+```elixir
+defmodule NewPassport do
+  def get_new_passport(now, birthday, form) do
+    with {:ok, timestamp} <- enter_building(now),
+          {:ok, manual} <- find_counter_information(now),
+          counter <- manual.(birthday),
+          {:ok, checksum} <- stamp_form(timestamp, counter, form) do
+      {:ok, get_new_passport_number(timestamp, counter, checksum)}
+    else
+      {:coffee_break, _msg} -> {:retry, now |> NaiveDateTime.add(15 * 60, :second)}
+      err -> err
+    end
+  end
+
+  # Do not modify the functions below
+
+  def enter_building(%NaiveDateTime{} = datetime) do
+    day = Date.day_of_week(datetime)
+    time = NaiveDateTime.to_time(datetime)
+
+    cond do
+      day <= 4 and time_between(time, ~T[13:00:00], ~T[15:30:00]) ->
+        {:ok, datetime |> DateTime.from_naive!("Etc/UTC") |> DateTime.to_unix()}
+
+      day == 5 and time_between(time, ~T[13:00:00], ~T[14:30:00]) ->
+        {:ok, datetime |> DateTime.from_naive!("Etc/UTC") |> DateTime.to_unix()}
+
+      true ->
+        {:error, "city office is closed"}
+    end
+  end
+
+  @eighteen_years 18 * 365
+  def find_counter_information(%NaiveDateTime{} = datetime) do
+    time = NaiveDateTime.to_time(datetime)
+
+    if time_between(time, ~T[14:00:00], ~T[14:20:00]) do
+      {:coffee_break, "information counter staff on coffee break, come back in 15 minutes"}
+    else
+      {:ok, fn %Date{} = birthday -> 1 + div(Date.diff(datetime, birthday), @eighteen_years) end}
+    end
+  end
+
+  def stamp_form(timestamp, counter, :blue) when rem(counter, 2) == 1 do
+    {:ok, 3 * (timestamp + counter) + 1}
+  end
+
+  def stamp_form(timestamp, counter, :red) when rem(counter, 2) == 0 do
+    {:ok, div(timestamp + counter, 2)}
+  end
+
+  def stamp_form(_timestamp, _counter, _form), do: {:error, "wrong form color"}
+
+  def get_new_passport_number(timestamp, counter, checksum) do
+    "#{timestamp}-#{counter}-#{checksum}"
+  end
+
+  defp time_between(time, from, to) do
+    Time.compare(from, time) != :gt and Time.compare(to, time) == :gt
+  end
+end
+
+# 2
+# NewPassport.get_new_passport(~N"2021-10-08 14:15:00", ~D"1984-09-14", :blue)
+# => {:retry, ~N"2021-10-08 14:30:00"} 
+
+# NewPassport.find_counter_information(~N"2021-10-08 14:15:00")
+# NewPassport.get_new_passport(~N"2021-10-11 14:25:00", ~D"1984-09-14", :blue)
+
+# 3
+# NewPassport.get_new_passport(~N[2021-10-11 14:25:00], ~D[1984-09-14], :blue)
+
+# now = ~N[2021-10-11 14:25:00]
+# birthday = ~D[1984-09-14]
+# form = :blue
+# {:ok, timestamp} = NewPassport.enter_building(now)
+# {:ok, manual} = NewPassport.find_counter_information(now)
+# NewPassport.stamp_form(timestamp, manual.(birthday), form)
+# NewPassport.get_new_passport_number(timestamp, manual.(birthday), form)
+
+# 4
+NewPassport.get_new_passport(~N[2021-10-11 13:00:00], ~D[1964-09-14], :red)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, "1633957200-4-816978602"}
+```
+
+## community garden
+
+```elixir
+# Use the Plot struct as it is provided
+defmodule Plot do
+  @enforce_keys [:plot_id, :registered_to]
+  defstruct [:plot_id, :registered_to]
+end
+
+defmodule CommunityGarden do
+  def start(), do: Agent.start(fn -> %{list: [], counter: 0} end)
+
+  def list_registrations(pid), do: pid |> Agent.get(fn map -> map.list end)
+
+  def register(pid, register_to) do
+    current_id = pid |> Agent.get(fn map -> map.counter end)
+    new_plot = %Plot{plot_id: current_id + 1, registered_to: register_to}
+    pid |> Agent.update(fn map -> %{list: [new_plot | map.list], counter: current_id + 1} end)
+    new_plot
+  end
+
+  def release(pid, plot_id) do
+    pid
+    |> Agent.update(fn map ->
+      rest = Enum.filter(map.list, fn plot -> plot.plot_id != plot_id end)
+      %{list: rest, counter: map.counter}
+    end)
+  end
+
+  def get_registration(pid, plot_id) do
+    plot =
+      pid |> Agent.get(fn map -> Enum.find(map.list, fn plot -> plot.plot_id == plot_id end) end)
+
+    case plot do
+      nil -> {:not_found, "plot is unregistered"}
+      _plot -> plot
+    end
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, CommunityGarden, <<70, 79, 82, 49, 0, 0, 18, ...>>, {:get_registration, 2}}
+```
+
+```elixir
+# 1
+{:ok, pid} = CommunityGarden.start()
+# => {:ok, #PID<0.112.0>}
+
+# 2
+# CommunityGarden.list_registrations(pid)
+# => []
+
+# 3
+CommunityGarden.register(pid, "Emma Balan")
+# => %Plot{plot_id: 1, registered_to: "Emma Balan"}
+# CommunityGarden.list_registrations(pid)
+# => [%Plot{plot_id: 1, registered_to: "Emma Balan"}]
+
+plot_1 = CommunityGarden.register(pid, "Johnny Appleseed")
+plot_2 = CommunityGarden.register(pid, "Frederick Law Olmsted")
+plot_3 = CommunityGarden.register(pid, "Lancelot (Capability) Brown")
+# plot_3.plot_id
+CommunityGarden.register(pid, "Lancelot (Capability) Brown")
+
+# 4
+CommunityGarden.release(pid, 3)
+# => :ok
+CommunityGarden.list_registrations(pid)
+# => []
+
+# {:ok, pid} = CommunityGarden.start()
+# plot_1 = CommunityGarden.register(pid, "Keanu Reeves")
+# plot_2 = CommunityGarden.register(pid, "Thomas A. Anderson")
+# assert plot_1.plot_id == 1
+# assert plot_2.plot_id == 2
+# CommunityGarden.release(pid, plot_1.plot_id)
+# CommunityGarden.release(pid, plot_2.plot_id)
+# plot_3 = CommunityGarden.register(pid, "John Doe")
+# plot_4 = CommunityGarden.register(pid, "Jane Doe")
+# assert plot_3.plot_id == 3
+# assert plot_4.plot_id == 4
+
+# 5
+CommunityGarden.get_registration(pid, 1)
+# => %Plot{plot_id: 1, registered_to: "Emma Balan"}
+CommunityGarden.get_registration(pid, 7)
+# => {:not_found, "plot is unregistered"}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:not_found, "plot is unregistered"}
+```
+
+## captain's log
+
+```elixir
+defmodule CaptainsLog do
+  @planetary_classes ["D", "H", "J", "K", "L", "M", "N", "R", "T", "Y"]
+
+  def random_planet_class() do
+    Enum.random(@planetary_classes)
+  end
+
+  def random_ship_registry_number() do
+    "NCC-#{1_000..9999 |> Enum.random()}"
+  end
+
+  def random_stardate() do
+    41_000 + :rand.uniform() * 1_000
+  end
+
+  def format_stardate(stardate) do
+    :io_lib.format("~.1f", [stardate]) |> to_string
+  end
+end
+
+# 1
+CaptainsLog.random_planet_class()
+# => "K"
+
+# 2
+CaptainsLog.random_ship_registry_number()
+# => "NCC-1947"
+
+# 3
+CaptainsLog.random_stardate()
+# => 41458.15721310934
+
+# 4
+CaptainsLog.format_stardate(41458.15721310934)
+# => "41458.2"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"41458.2"
+```
+
+## lucas numbers
+
+```elixir
+defmodule LucasNumbers do
+  @moduledoc """
+  Lucas numbers are an infinite sequence of numbers which build progressively
+  which hold a strong correlation to the golden ratio (φ or ϕ)
+
+  E.g.: 2, 1, 3, 4, 7, 11, 18, 29, ...
+  """
+  def generate(count) do
+    g =
+      Stream.iterate({2, 1}, fn {x, y} -> {y, x + y} end)
+      |> Stream.map(fn {_x, y} -> y end)
+      |> Enum.take(count - 1)
+
+    [2 | g]
+  end
+end
+
+LucasNumbers.generate(4)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[2, 1, 3, 4]
+```
+
+## rpn calculator inspection
+
+https://exercism.org/tracks/elixir/exercises/rpn-calculator-inspection
+
+```elixir
+defmodule RPNCalculatorInspection do
+  def start_reliability_check(calculator, input) do
+    pid = spawn_link(fn -> calculator.(input) end)
+
+    %{
+      input: input,
+      pid: pid
+    }
+  end
+
+  def await_reliability_check_result(%{pid: pid, input: input}, results) do
+    receive do
+      {:EXIT, ^pid, :normal} ->
+        Map.put(results, input, :ok)
+
+      {:EXIT, ^pid, _reason} ->
+        Map.put(results, input, :error)
+    after
+      100 ->
+        Map.put(results, input, :timeout)
+    end
+  end
+
+  def reliability_check(calculator, inputs) do
+    trap_exit = Process.flag(:trap_exit, true)
+
+    results =
+      inputs
+      |> Enum.map(fn input -> start_reliability_check(calculator, input) end)
+      |> Enum.reduce(%{}, &await_reliability_check_result/2)
+
+    Process.flag(:trap_exit, trap_exit)
+    results
+  end
+
+  def correctness_check(calculator, inputs) do
+    Enum.map(inputs, fn input ->
+      Task.async(fn -> calculator.(input) end)
+    end)
+    |> Enum.map(fn task -> Task.await(task, 100) end)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, RPNCalculatorInspection, <<70, 79, 82, 49, 0, 0, 15, ...>>, {:correctness_check, 2}}
+```
+
+```elixir
+# 1
+# RPNCalculatorInspection.start_reliability_check(fn _ -> 0 end, "2 3 +")
+# => %{input: "2 3 +", pid: #PID<0.169.0>}
+
+# 2
+# when an exit message is waiting for the process in its inbox
+# send(self(), {:EXIT, pid, :normal})
+
+# RPNCalculatorInspection.await_reliability_check_result(
+#   %{input: "5 7 -", pid: pid},
+#   %{}
+# )
+# => %{"5 7 -" => :ok}
+
+# when there are no messages in the process inbox
+# RPNCalculatorInspection.await_reliability_check_result(
+#   %{input: "3 2 *", pid: pid},
+#   %{"5 7 -" => :ok}
+# )
+# => %{"5 7 -" => :ok, "3 2 *" => :timeout}
+
+# 3
+# fake_broken_calculator = fn input ->
+#   if String.ends_with?(input, "*"), do: raise("oops")
+# end
+
+# inputs = ["2 3 +", "10 3 *", "20 2 /"]
+
+# RPNCalculatorInspection.reliability_check(fake_broken_calculator, inputs)
+# => %{
+#       "2 3 +" => :ok,
+#       "10 3 *" => :error,
+#       "20 2 /" => :ok
+#     }
+
+# 4
+fast_cheating_calculator = fn _input -> 14 end
+inputs = ["13 1 +", "50 2 *", "1000 2 /"]
+RPNCalculatorInspection.correctness_check(fast_cheating_calculator, inputs)
+# => [14, 14, 14]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[14, 14, 14]
+```
+
+## strain
+
+```elixir
+defmodule Strain do
+  @doc """
+  Given a `list` of items and a function `fun`, return the list of items where
+  `fun` returns true.
+
+  Do not use `Enum.filter`.
+  """
+
+  @spec keep(list :: list(any), fun :: (any -> boolean)) :: list(any)
+  def keep([i | etc], fun) do
+    # for i <- list, fun.(i), do: i
+    if fun.(i) do
+      [i | keep(etc, fun)]
+    else
+      keep(etc, fun)
+    end
+  end
+
+  def keep([], _fun), do: []
+
+  @doc """
+  Given a `list` of items and a function `fun`, return the list of items where
+  `fun` returns false.
+
+  Do not use `Enum.reject`.
+  """
+  @spec discard(list :: list(any), fun :: (any -> boolean)) :: list(any)
+  def discard([i | etc], fun) do
+    # for i <- list, !fun.(i), do: i
+    if fun.(i) do
+      discard(etc, fun)
+    else
+      [i | discard(etc, fun)]
+    end
+  end
+
+  def discard([], _fun), do: []
+
+  def is_odd?(n), do: rem(n, 2) == 1
+end
+
+# Strain.keep([], fn _ -> true end)
+# Strain.keep([1, 2, 3, 4], &Strain.is_odd?/1)
+Strain.discard([1, 2, 3, 4], &Strain.is_odd?/1)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[2, 4]
+```
+
+## leap
+
+```elixir
+defmodule Year do
+  @doc """
+  Returns whether 'year' is a leap year.
+
+  A leap year occurs:
+
+  on every year that is evenly divisible by 4
+    except every year that is evenly divisible by 100
+      unless the year is also evenly divisible by 400
+  """
+  @spec leap_year?(non_neg_integer) :: boolean
+
+  def leap_year?(year) when rem(year, 400) == 0, do: true
+  def leap_year?(year) when rem(year, 100) == 0, do: false
+  def leap_year?(year), do: rem(year, 4) == 0
+end
+
+# Year.leap_year?(1997)
+# Year.leap_year?(1992)
+# => false
+
+Year.leap_year?(1900)
+Year.leap_year?(2000)
+# => true
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```

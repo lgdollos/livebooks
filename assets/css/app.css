@@ -1,0 +1,108 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@font-face {
+  font-family: 'JetBrainsMono';
+  src: url('/fonts/JetBrainsMonoNL-Regular.ttf');
+}
+pre {
+  @apply m-4 overflow-auto py-4 px-8 rounded-lg text-xs bg-[#292C33];
+}
+
+code span, .text code, .query code, .warning code, .datatable, code.inline {
+  @apply font-['JetBrainsMono'] subpixel-antialiased leading-5;
+}
+
+.main h2 {
+  @apply text-lg font-semibold;
+}
+
+.main h1 {
+  @apply text-xl font-semibold mb-6;
+}
+
+.main h1, .main h2, .main p, .main h3, .main h4, .main ul, .main li {
+  @apply ml-4 pt-1.5;
+}
+
+.main p, .main ul {
+  @apply text-sm;
+}
+
+ul {
+  @apply mb-8 list-disc pl-4;
+}
+
+strong {
+  @apply font-semibold;
+}
+
+.main a {
+  @apply underline decoration-solid decoration-zinc-700;
+}
+
+.highlight {
+  @apply mt-6;
+}
+
+.n, .c {
+  @apply text-[#c4cad6];
+}
+
+.kd, .k, .kn, .ow {
+  @apply text-[#C678DD];
+}
+
+.nc {
+  @apply text-[#E06C75];
+}
+
+.function {
+  @apply text-[#ABB2BF];
+}
+
+.o {
+  @apply text-[#D19A66];
+}
+
+.ss, .nf, .mi, .mf, .se, .mb, .sc, .no, .mh {
+  @apply text-[#61AFEF];
+}
+
+.s, .na {
+  @apply text-[#98C379];
+}
+
+.text {
+  @apply px-4 bg-white border border-gray-200 text-[#4E77EB] shadow-sm mb-12;
+}
+
+.query {
+  @apply px-4 bg-white border text-[#0184bc];
+}
+
+.warning {
+  @apply px-4 bg-white border text-[#8c92a3];
+}
+
+.p, .bracket, .si {
+  @apply text-yellow-400;
+}
+
+.c1, .bp {
+  @apply text-[#8c92a3];
+}
+
+.datatable > *{
+  @apply text-xs;
+}
+
+code.inline {
+  @apply text-xs border border-gray-100 rounded-md bg-gray-200 p-0.5 px-1 text-zinc-700;
+}
+
+.ld {
+  @apply text-[#56b6c2];
+}
+
