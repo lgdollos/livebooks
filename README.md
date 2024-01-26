@@ -5,9 +5,9 @@ Display .livemd notebooks including outputs, with styling similar to what's rend
 Extended approach from [notes.club](https://notes.club) ([repo](https://github.com/notesclub/notesclub)) with outputs, datatables, and new syntax highlighting.
 
 For the raw .livemd files:
-- [SQL Murder Mystery (Ecto)](https://github.com/lgdollos/livebooks/priv/static/livemd/sql.livemd)
-- [Think Bayes ch1 (Explorer)](https://github.com/lgdollos/livebooks/priv/static/livemd/bayes.livemd)
-- [Exercism (Elixir)](https://github.com/lgdollos/livebooks/priv/static/livemd/exercism.livemd)
+- [SQL Murder Mystery (Ecto)](https://github.com/lgdollos/livebooks/blob/main/priv/static/livemd/sql.livemd)
+- [Think Bayes ch1 (Explorer)](https://github.com/lgdollos/livebooks/blob/main/priv/static/livemd/bayes.livemd)
+- [Exercism (Elixir)](https://github.com/lgdollos/livebooks/blob/main/priv/static/livemd/exercism.livemd)
 
 ## Running
 To start your Phoenix server:
